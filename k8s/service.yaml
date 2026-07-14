@@ -1,0 +1,21 @@
+# Exposes the demo chat UI on a public IP: port 80 -> container 8080.
+# COST NOTE: type LoadBalancer provisions a GCP external passthrough Network
+# Load Balancer with a public forwarding rule — it bills hourly (~$0.025/hr
+# plus traffic) as long as it exists. Fine for a short demo; `terraform
+# destroy` / deleting this Service releases it. Don't leave it running.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-agent
+  namespace: ai-agent
+  labels:
+    app: ai-agent
+spec:
+  type: LoadBalancer
+  selector:
+    app: ai-agent
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP

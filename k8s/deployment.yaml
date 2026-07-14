@@ -1,0 +1,75 @@
+# The SINGLE Deployment in this repo — Harness K8s Canary manages exactly one
+# workload, so never add a second Deployment under k8s/.
+#
+# Probe timings follow .claude/skills/k8s-probe-tuning: a bad canary is
+# declared unready in ~13s (readiness: 3s delay + 2 x 5s period) and the
+# rollout is marked Failed by progressDeadlineSeconds=60 — fast enough that
+# Harness rollback happens on screen, not after a coffee break.
+# DEMO values: production would want longer periods, higher thresholds, and a
+# startupProbe instead of aggressive initialDelays.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-agent
+  namespace: ai-agent
+  labels:
+    app: ai-agent
+spec:
+  replicas: 1
+  # Default is 600s = a 10-minute stall when a canary never goes Ready
+  # (e.g. crash_on_start). 60s keeps the failed-rollout signal demo-fast.
+  progressDeadlineSeconds: 60
+  selector:
+    matchLabels:
+      app: ai-agent
+  template:
+    metadata:
+      labels:
+        app: ai-agent
+    spec:
+      # Workload Identity: KSA annotated with the GCP SA (see serviceaccount.yaml).
+      serviceAccountName: ai-agent-sa
+      containers:
+        - name: ai-agent
+          # PLACEHOLDER: Harness CI pushes to DockerHub and overrides the tag
+          # at deploy time (e.g. <+artifact.image>). Replace DOCKERHUB_USER for
+          # manual kubectl deploys.
+          image: DOCKERHUB_USER/ai-agent-lab:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            # FAILURE_MODE, BUILD_FLAVOR, LLM_PROVIDER, GOOGLE_CLOUD_PROJECT,
+            # GOOGLE_CLOUD_LOCATION, GEMINI_MODEL — see configmap.yaml.
+            - configMapRef:
+                name: ai-agent-config
+          # Readiness gates the canary rollout — stricter than liveness so
+          # "unready" shows on screen before any restarts.
+          # Time-to-unready ~ 3 + 2 x 5 = 13s.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2 # < the latency mode's 10s sleep, so latency trips it
+            failureThreshold: 2
+            successThreshold: 1
+          # Liveness restarts the pod after ~5 + 3 x 5 = 20s of failure
+          # (healthz_500 and latency both trip this).
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          # Sized for e2-small (2 GB) spot nodes.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

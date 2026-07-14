@@ -1,0 +1,29 @@
+# App configuration. FAILURE_MODE is THE demo toggle: flip it here (or via a
+# Harness service-variable override on this manifest) and redeploy the SAME
+# image — the canary goes unhealthy and Harness auto-rolls-back.
+#   none | healthz_500 | crash_on_start | latency | bad_agent
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-agent-config
+  namespace: ai-agent
+  labels:
+    app: ai-agent
+data:
+  # Demo toggle — set to healthz_500 / latency / crash_on_start / bad_agent
+  # to ship a "broken" canary. "none" = healthy.
+  FAILURE_MODE: "none"
+
+  # Shown by GET /version and the UI status bar so the on-screen flavor label
+  # flips visibly between deploys (e.g. "stable" vs "canary-broken").
+  BUILD_FLAVOR: "stable"
+
+  # LLM wiring. "vertex" is the point of Workload Identity in-cluster;
+  # set to "stub" to run without any Vertex AI access (no GCP calls at all).
+  LLM_PROVIDER: "vertex"
+
+  # PLACEHOLDER: replace PROJECT_ID with your GCP project id
+  # (terraform output, or a Harness variable override).
+  GOOGLE_CLOUD_PROJECT: "PROJECT_ID"
+  GOOGLE_CLOUD_LOCATION: "us-central1"
+  GEMINI_MODEL: "gemini-2.0-flash"
