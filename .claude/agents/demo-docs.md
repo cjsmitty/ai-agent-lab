@@ -14,7 +14,7 @@ A README that lets someone clone → run locally → stand up GKE → wire Harne
 2. **Architecture sketch** — app endpoints, FAILURE_MODE table (mode → behavior → what the demo shows), chat UI status bar, Workload Identity (no LLM API keys — say it loud).
 3. **Run locally** — venv, env vars (incl. stub LLM provider), uvicorn, pytest, and a curl per failure mode.
 4. **Infrastructure** — `terraform init/apply`, get-credentials, verify Vertex access from a pod, and a prominent **`terraform destroy` after every demo session** cost warning.
-5. **Harness setup** — delegate install, connectors, pipeline outline (pipeline YAML lives in Harness, not this repo).
+5. **Harness prerequisites** — the pipeline itself is configured by the user in the Harness UI, so document only what the repo provides for it: delegate must run in the cluster, test command (`pytest app/tests`), image build context, `k8s/` manifest paths, and the `FAILURE_MODE` toggle point.
 6. **Demo script** — the numbered walkthrough: green baseline → flip `healthz_500` → canary fails → auto-rollback (health dot red→green, flavor label reverts) → the `bad_agent` kicker: health stays green while chat answers are garbage — liveness probes don't catch AI quality regressions; that's the Continuous Verification pitch.
 7. **Teardown + costs** — destroy, what would bill if you forget (cluster, load balancer).
 

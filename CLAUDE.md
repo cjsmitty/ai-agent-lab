@@ -14,8 +14,9 @@ AI Python agentic app (FastAPI + Gemini on Vertex AI) deployed to GKE via a Harn
 | `Dockerfile`, `requirements.txt`, `.dockerignore` | `container-builder` |
 | `k8s/` manifests | `k8s-manifester` |
 | `terraform/` GCP infra | `terraform-gcp` |
-| Harness pipeline (in the Harness platform, NOT this repo) | `harness-config` |
 | `README.md` / docs / demo script | `demo-docs` |
+
+The Harness CI/CD pipeline is configured **by the user, manually, in the Harness UI** — no subagent, no skill, and no Harness YAML in this repo. Claude's job is only to make the repo Harness-ready: green pytest suite, buildable image, and `k8s/` manifests with a single Deployment and fast-failing probes.
 
 Each subagent must read its matching skill in `.claude/skills/` before implementing.
 
@@ -26,7 +27,7 @@ Each subagent must read its matching skill in `.claude/skills/` before implement
 - **LLM:** Gemini Flash via Vertex AI (`google-genai` SDK, `vertexai=True`). Auth via **Workload Identity** — KSA bound to a GCP SA holding `roles/aiplatform.user`. **No LLM API keys anywhere.** Stub provider for local dev/tests.
 - **Frontend:** vanilla HTML/CSS/JS chat + status bar polling `/version` and `/healthz` every few seconds — health dot and flavor label make failure and rollback visible on screen.
 - **Infra:** Terraform — zonal Standard GKE, 1–2 e2-small spot nodes, APIs (container, compute, artifactregistry, aiplatform), Workload Identity, clean `apply`/`destroy`. Destroy after every demo session.
-- **Pipeline (lives in Harness, never in this repo):** CI (pytest → docker build → push DockerHub) → CD K8s Canary (Canary+Primary step groups; readiness gate; failure strategy = Rollback Stage). Keep `k8s/` to a **single Deployment** — Harness canary manages exactly one workload.
+- **Pipeline (user-managed in the Harness UI, never in this repo):** CI (pytest → docker build → push DockerHub) → CD K8s Canary with automated rollback on failed canary health. Repo constraint that matters: keep `k8s/` to a **single Deployment** — Harness canary manages exactly one workload.
 
 ## Shared naming conventions (must stay in sync)
 
@@ -40,9 +41,8 @@ Each subagent must read its matching skill in `.claude/skills/` before implement
 3. `container-builder` — image builds/runs locally, healthcheck works
 4. `terraform-gcp` — GKE up and down cleanly
 5. `k8s-manifester` — manual kubectl deploy; probes and failure modes behave
-6. `harness-config` — pipeline in the Harness platform; canary + rollback proven
-7. Bonus: templatize a step in Harness
-8. `demo-docs` — README + demo script finalized
+6. *(user, in the Harness UI)* — pipeline wired; canary + rollback proven
+7. `demo-docs` — README + demo script finalized
 
 ## Repo boundaries
 
