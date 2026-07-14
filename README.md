@@ -118,6 +118,28 @@ docker run --rm -p 8080:8080 ai-agent-lab
 
 What `terraform apply` creates: required project APIs (never disabled on destroy), a **zonal** Standard GKE cluster with `deletion_protection = false`, one spot node pool (1–2 × `e2-small`, validation-capped at 2), the `ai-agent-app` GCP service account with `roles/aiplatform.user`, and the Workload Identity binding for `ai-agent/ai-agent-sa`. Optionally (`enable_artifact_registry = true`, default off) an Artifact Registry Docker repo — DockerHub is the primary registry. State is local on purpose; this stack lives for hours.
 
+### Easy path: `scripts/up.sh`
+
+One command runs everything in this section: preflight (terraform/gcloud/kubectl on PATH, `terraform/terraform.tfvars` present, working Application Default Credentials — if not, it tells you to run `gcloud auth application-default login`), `terraform init` + `apply`, `gcloud container clusters get-credentials` from the Terraform outputs, patches the `PROJECT_ID` and image placeholders into a **temp copy** of `k8s/` (the checked-in manifests are never modified — Harness consumes those as-is), applies namespace-first, waits for the rollout (120s, non-fatal) and the LoadBalancer external IP (polls up to ~180s), then prints the demo URL and a `down.sh` cost reminder.
+
+```bash
+cp terraform/terraform.tfvars.example terraform/terraform.tfvars   # edit project_id first
+DOCKERHUB_USER=<your-dockerhub-user> scripts/up.sh                 # deploys <you>/ai-agent-lab:latest
+```
+
+| Flag / env var | Effect |
+|---|---|
+| `-i, --image <full-ref>` | Exact image to deploy — wins over `DOCKERHUB_USER` |
+| `DOCKERHUB_USER=<you>` | Deploy `<you>/ai-agent-lab:latest` |
+| `TF_AUTO_APPROVE=1` | Pass `-auto-approve` to `terraform apply` (non-interactive) |
+| `-h, --help` | Usage |
+
+If neither `-i/--image` nor `DOCKERHUB_USER` is set, the `DOCKERHUB_USER` image placeholder is left in the Deployment and the pod sits in **ImagePullBackOff** until Harness (or you) deploys a real image — an acceptable state for wiring up the pipeline; the script warns instead of failing.
+
+> The scripts are `bash -n`- and shellcheck-clean but — exactly like the manual commands in this section — have **not** been executed against a live GCP project from the environment that built this repo. First run: watch the output.
+
+### Manual alternative (what the script does under the hood)
+
 ```bash
 cd terraform
 cp terraform.tfvars.example terraform.tfvars   # edit project_id (tfvars is gitignored — never commit it)
@@ -155,7 +177,7 @@ kubectl -n ai-agent exec deploy/ai-agent -- \
 A sensible answer back means the KSA→GCP-SA impersonation and `aiplatform.user` grant are working. (`curl http://<EXTERNAL-IP>/ready` should also report `"llm_provider": "vertex"`.)
 
 > ### ⚠️ `terraform destroy` after EVERY demo session
-> This cluster bills by the hour whether or not you're looking at it. The lab has no auto-teardown. When the demo ends: delete the LoadBalancer Service first, then destroy — see [Teardown + costs](#teardown--costs).
+> This cluster bills by the hour whether or not you're looking at it. The lab has no auto-teardown. When the demo ends, run `scripts/down.sh` (it deletes the LoadBalancer Service first, then destroys) — see [Teardown + costs](#teardown--costs).
 
 ## Harness prerequisites
 
@@ -174,7 +196,7 @@ The pipeline itself is configured **by you, in the Harness UI** — there is del
 
 ## Demo script
 
-Prep: cluster up, app deployed green via Harness, browser open on `http://<EXTERNAL-IP>/`, a second window on the Harness pipeline execution.
+Prep: cluster up and app deployed (`scripts/up.sh`, or the manual steps in [Infrastructure](#infrastructure-terraform--gke)), app green via Harness, browser open on `http://<EXTERNAL-IP>/`, a second window on the Harness pipeline execution.
 
 1. **Green baseline.** Status bar: green health dot, `version: 0.1.0`, flavor `stable`, no failure badge. Ask the agent `what is 6*7` and `tell me about canary deployments` — real Gemini answers, and point out there is **no API key anywhere** (Workload Identity).
 2. **Ship a broken canary.** Set `FAILURE_MODE=healthz_500` (and `BUILD_FLAVOR=canary-broken` so the label change is visible) via your Harness variable override or the ConfigMap, and run the pipeline. Same image, one config value changed.
@@ -182,13 +204,21 @@ Prep: cluster up, app deployed green via Harness, browser open on `http://<EXTER
 4. **Auto-rollback.** Harness marks the canary phase failed and rolls back without any human action. On screen: health dot settles **green**, flavor label reverts to `stable`, failure badge gone. Chat still answers. That's the headline: *bad deploy detected and reverted automatically.*
 5. **The kicker — `bad_agent`.** Redeploy with `FAILURE_MODE=bad_agent` (flavor e.g. `canary-bad-agent`). This canary **passes every probe** — the dot stays green, the rollout succeeds, Harness sees a healthy deployment. Now ask the agent anything: `%%%## AGENT MALFUNCTION ##%%% zxq9!! bleep blorp…`. The service is "healthy" and the product is garbage — and it never even called the LLM.
 6. **Land the pitch.** Liveness probes catch dead processes, not dumb answers. AI quality regressions sail straight through health-check-based rollback — that's the gap Harness **Continuous Verification** (verifying real service behavior/metrics during the canary phase, not just probe status) exists to close.
-7. Roll back to `FAILURE_MODE=none`, then **tear down** (next section).
+7. Roll back to `FAILURE_MODE=none`, then **tear down** with `scripts/down.sh` (next section).
 
 Variants if you have time: `latency` (slow is the new down — 2s probe timeout vs a 10s handler) and `crash_on_start` (CrashLoopBackOff, the classic).
 
 ## Teardown + costs
 
 **Do this at the end of every session** (run on your machine):
+
+```bash
+scripts/down.sh                    # TF_AUTO_APPROVE=1 scripts/down.sh for non-interactive
+```
+
+`scripts/down.sh` deletes the LoadBalancer Service (`k8s/service.yaml`) **first** — its GCP forwarding rule lives outside Terraform state and can orphan (and keep billing) if the cluster is destroyed underneath it — waits ~20s for GCP to release the rule, runs `terraform destroy` (~5 min; requires the same `terraform/terraform.tfvars` that apply used), and prints the `gcloud` leftover-check commands. It tolerates a cluster that's already gone or an unreachable kubectl context: it skips the Service delete with a note and proceeds to destroy. Same untested-live caveat as `up.sh`.
+
+Manual equivalent:
 
 ```bash
 # 1. Release the load balancer first — LB Services created outside Terraform
