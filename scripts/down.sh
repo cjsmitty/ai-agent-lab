@@ -22,7 +22,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TF_DIR="${REPO_ROOT}/terraform"
 K8S_DIR="${REPO_ROOT}/k8s"
-NAMESPACE="ai-agent"
 
 ok()   { echo "✓ $*"; }
 warn() { echo "! $*" >&2; }
