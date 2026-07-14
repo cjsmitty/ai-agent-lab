@@ -42,7 +42,7 @@ Probe math (see `k8s/deployment.yaml`): readiness (`/ready`) marks a bad pod unr
 
 ## Run locally
 
-Tested with Python 3.11. The stub LLM provider is the default — **no GCP account, credentials, or network needed locally.**
+Tested with Python 3.13. The stub LLM provider is the default — **no GCP account, credentials, or network needed locally.**
 
 ```bash
 python3 -m venv .venv
