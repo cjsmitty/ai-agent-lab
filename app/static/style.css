@@ -1,0 +1,180 @@
+/* Harness AI Agent Lab — minimal demo styling. One accent color. */
+
+:root {
+  --accent: #4a6cf7;
+  --bg: #f4f6fb;
+  --panel: #ffffff;
+  --text: #1c2333;
+  --muted: #6b7280;
+  --error: #d64545;
+  --ok: #2fbf71;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ---------- status bar ---------- */
+
+#status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: var(--panel);
+  border-bottom: 2px solid var(--accent);
+  flex-wrap: wrap;
+}
+
+.status-left,
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.app-name { font-weight: 600; }
+
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex: none;
+}
+.dot.unknown { background: #c4c9d4; }
+.dot.ok { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.dot.bad { background: var(--error); box-shadow: 0 0 8px var(--error); }
+
+#version-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.flavor {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(74, 108, 247, 0.1);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+}
+
+.failure-mode {
+  font-size: 0.72rem;
+  color: var(--error);
+}
+
+.hidden { display: none; }
+
+/* ---------- chat ---------- */
+
+#chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem;
+  min-height: 0;
+}
+
+#messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.25rem;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+}
+.row.user { align-self: flex-end; align-items: flex-end; }
+.row.agent, .row.error { align-self: flex-start; align-items: flex-start; }
+
+.bubble {
+  padding: 0.55rem 0.85rem;
+  border-radius: 14px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.bubble.user {
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.bubble.agent {
+  background: var(--panel);
+  border: 1px solid #dde2ee;
+  border-bottom-left-radius: 4px;
+}
+.bubble.error {
+  background: #fdecec;
+  border: 1px solid var(--error);
+  color: #8f1f1f;
+  border-bottom-left-radius: 4px;
+}
+
+.meta {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+
+/* ---------- input ---------- */
+
+#chat-form {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+}
+
+#prompt-input {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid #cdd3e1;
+  border-radius: 10px;
+  font-size: 1rem;
+  background: var(--panel);
+  color: var(--text);
+}
+#prompt-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+#prompt-input:disabled { background: #eef0f6; }
+
+#send-btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+#send-btn:disabled { opacity: 0.5; cursor: default; }
+
+@media (max-width: 480px) {
+  #status-bar { padding: 0.5rem 0.6rem; }
+  #chat { padding: 0.6rem; }
+  .row { max-width: 95%; }
+}

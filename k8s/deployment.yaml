@@ -1,0 +1,87 @@
+# The SINGLE Deployment in this repo — Harness K8s Canary manages exactly one
+# workload, so never add a second Deployment under k8s/.
+#
+# Probe timings follow .claude/skills/k8s-probe-tuning. How a bad canary
+# fails depends on the mode: crash_on_start never becomes Ready (CrashLoop);
+# healthz_500 and latency keep /ready returning 200, so the LIVENESS probe on
+# /healthz (fails in ~20s) restart-loops the pod, and minReadySeconds=30
+# ensures those brief Ready windows never count as available. Either way
+# progressDeadlineSeconds=60 marks the rollout Failed — fast enough that
+# Harness rollback happens on screen, not after a coffee break.
+# DEMO values: production would want longer periods, higher thresholds, and a
+# startupProbe instead of aggressive initialDelays.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-agent
+  namespace: ai-agent
+  labels:
+    app: ai-agent
+spec:
+  replicas: 1
+  # Default is 600s = a 10-minute stall when a canary never goes Ready
+  # (e.g. crash_on_start). 60s keeps the failed-rollout signal demo-fast.
+  progressDeadlineSeconds: 60
+  # Pod must stay Ready 30s continuously before it counts as available.
+  # Under healthz_500/latency, /ready still returns 200, so the pod goes
+  # briefly Ready (~3-8s) — but the liveness restart at ~20s lands inside
+  # this window, so a bad canary never becomes available and the rollout
+  # hits progressDeadlineSeconds instead of momentarily looking healthy.
+  minReadySeconds: 30
+  selector:
+    matchLabels:
+      app: ai-agent
+  template:
+    metadata:
+      labels:
+        app: ai-agent
+    spec:
+      # Workload Identity: KSA annotated with the GCP SA (see serviceaccount.yaml).
+      serviceAccountName: ai-agent-sa
+      containers:
+        - name: ai-agent
+          # PLACEHOLDER: Harness CI pushes to DockerHub and overrides the tag
+          # at deploy time (e.g. <+artifact.image>). Replace DOCKERHUB_USER for
+          # manual kubectl deploys.
+          image: DOCKERHUB_USER/ai-agent-lab:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            # FAILURE_MODE, BUILD_FLAVOR, LLM_PROVIDER, GOOGLE_CLOUD_PROJECT,
+            # GOOGLE_CLOUD_LOCATION, GEMINI_MODEL — see configmap.yaml.
+            - configMapRef:
+                name: ai-agent-config
+          # Readiness gates the canary rollout. NOTE: /ready only fails on
+          # provider/config errors — healthz_500 and latency do NOT touch it
+          # (the latency sleep lives in /healthz only; see app/main.py), so
+          # those modes are caught by the liveness probe below.
+          # Time-to-unready when /ready does fail ~ 3 + 2 x 5 = 13s.
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2 # /ready is fast; kept short for symmetry with liveness
+            failureThreshold: 2
+            successThreshold: 1
+          # Liveness restarts the pod after ~5 + 3 x 5 = 20s of failure.
+          # healthz_500 trips it via HTTP 500; latency trips it because the
+          # 10s sleep in /healthz exceeds timeoutSeconds=2.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          # Sized for e2-small (2 GB) spot nodes.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Env / credentials — examples only in git
+.env
+*.tfvars
+!*.tfvars.example
+kubeconfig*
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store

@@ -1,0 +1,10 @@
+# Runtime dependencies — exact pins for reproducible CI/demo builds.
+# Direct deps + behavior-critical transitives (starlette/pydantic drive
+# FastAPI behavior); the rest of the tree floats within these constraints.
+fastapi==0.139.0
+uvicorn==0.51.0
+starlette==1.3.1
+pydantic==2.13.4
+# Vertex AI Gemini SDK — imported lazily by the vertex provider; stub mode
+# never touches it, but the deployed image must ship it.
+google-genai==2.11.0

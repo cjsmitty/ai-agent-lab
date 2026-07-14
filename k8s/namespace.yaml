@@ -1,0 +1,11 @@
+# Namespace for the AI Agent Lab demo.
+# NOTE: when applying the whole directory for the first time on a live cluster,
+# apply this file first (kubectl applies a directory alphabetically, so
+# configmap.yaml would otherwise hit a missing namespace):
+#   kubectl apply -f k8s/namespace.yaml && kubectl apply -f k8s/
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-agent
+  labels:
+    app: ai-agent

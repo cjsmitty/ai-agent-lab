@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harness AI Agent Lab</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header id="status-bar">
+    <div class="status-left">
+      <span id="health-dot" class="dot unknown" title="health"></span>
+      <span class="app-name">AI Agent Lab</span>
+    </div>
+    <div class="status-right">
+      <span id="version-label">version: &hellip;</span>
+      <span id="flavor-label" class="flavor">&hellip;</span>
+      <span id="failure-label" class="failure-mode hidden"></span>
+    </div>
+  </header>
+
+  <main id="chat">
+    <div id="messages" aria-live="polite"></div>
+    <form id="chat-form" autocomplete="off">
+      <input id="prompt-input" type="text" placeholder="Ask the agent..." aria-label="Prompt">
+      <button id="send-btn" type="submit">Send</button>
+    </form>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
