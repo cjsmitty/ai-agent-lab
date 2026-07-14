@@ -1,9 +1,9 @@
 # Multi-stage build per .claude/skills/pinned-python-container.
-# Base is python:3.11-slim to match the local dev venv (Python 3.11.x) —
+# Base is python:3.13-slim to match the local dev venv (Python 3.13.x) —
 # identical interpreter minor version for dev, CI, and the deployed image.
 
 # ---- builder: resolve and install pinned deps into a venv ----
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 WORKDIR /build
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ---- runtime: venv + app source only, non-root ----
-FROM python:3.11-slim
+FROM python:3.13-slim
 RUN useradd --create-home --uid 1000 appuser
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH" \
