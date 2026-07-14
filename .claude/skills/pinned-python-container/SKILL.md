@@ -11,7 +11,7 @@ Small, reproducible, non-root Python images with a working healthcheck.
 
 ```dockerfile
 # ---- builder ----
-FROM python:3.12-slim AS builder
+FROM python:3.13-slim AS builder
 WORKDIR /build
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
@@ -19,7 +19,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ---- runtime ----
-FROM python:3.12-slim
+FROM python:3.13-slim
 RUN useradd --create-home --uid 1000 appuser
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH" \

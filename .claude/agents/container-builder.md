@@ -13,7 +13,7 @@ An image that builds and runs locally, serves the app (including the static UI),
 - **requirements.txt:** every dependency pinned to an exact version (`==`). Core: fastapi, uvicorn, google-genai, pytest + httpx for the test stage.
 - **Dockerfile:** multi-stage —
   - builder stage installs deps into a venv/wheels;
-  - final stage on `python:3.12-slim`, copies only the venv + `app/`, runs as a non-root user, `EXPOSE 8080`, `CMD` uvicorn on `0.0.0.0:8080`.
+  - final stage on the current stable `python:3.x-slim` (3.13 as of this writing — must match the dev venv's minor version per the skill), copies only the venv + `app/`, runs as a non-root user, `EXPOSE 8080`, `CMD` uvicorn on `0.0.0.0:8080`.
   - `HEALTHCHECK` hitting `/healthz` (python urllib one-liner — no curl in slim images).
   - Order layers for caching: requirements before source.
 - **.dockerignore:** exclude `.git`, `terraform/`, `k8s/`, tests caches, `.claude/`, local venvs.
