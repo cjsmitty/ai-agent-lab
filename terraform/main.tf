@@ -103,6 +103,19 @@ resource "google_service_account_iam_member" "app_workload_identity" {
   service_account_id = google_service_account.app.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "serviceAccount:${var.project_id}.svc.id.goog[${var.k8s_namespace}/${var.ksa_name}]"
+
+  # The Workload Identity pool PROJECT.svc.id.goog is created lazily when the
+  # first WI-enabled cluster comes up. Without this dependency, Terraform
+  # applies the binding in parallel with cluster creation and it fails with
+  # "Error 400: Identity Pool does not exist (PROJECT.svc.id.goog)" (observed
+  # on a fresh project). The cluster (not the node pool) is the right
+  # dependency: the pool exists as soon as the cluster with
+  # workload_identity_config is up.
+  #
+  # Note: on brand-new projects a short IAM propagation window can still
+  # surface the same 400 even after the cluster exists — simply re-run
+  # `terraform apply`; it resolves cleanly and is idempotent.
+  depends_on = [google_container_cluster.lab]
 }
 
 # ---------------------------------------------------------------------------
