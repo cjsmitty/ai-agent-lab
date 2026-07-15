@@ -82,9 +82,36 @@ function setBusy(busy) {
   sendBtn.textContent = busy ? '…' : 'Send';
 }
 
+// "Agent is typing" indicator — an agent-styled bubble holding three animated
+// dots (CSS only). Shown while /agent is in flight, removed the instant the
+// real bubble or an error renders. Returns the row so the caller can remove it.
+function showTyping() {
+  const row = document.createElement('div');
+  row.className = 'row agent typing-row';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble agent typing';
+  bubble.setAttribute('aria-label', 'Agent is typing');
+  for (let i = 0; i < 3; i++) {
+    const dot = document.createElement('span');
+    dot.className = 'typing-dot';
+    bubble.appendChild(dot);
+  }
+  row.appendChild(bubble);
+
+  messagesEl.appendChild(row);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return row;
+}
+
+function removeTyping(row) {
+  if (row && row.parentNode) row.parentNode.removeChild(row);
+}
+
 async function sendPrompt(prompt) {
   setBusy(true);
   addBubble(prompt, 'user');
+  const typing = showTyping(); // remains until the response/error is rendered
   try {
     const res = await fetch('/agent', {
       method: 'POST',
@@ -93,6 +120,7 @@ async function sendPrompt(prompt) {
     });
 
     const raw = await res.text();
+    removeTyping(typing);
 
     if (!res.ok) {
       // Non-2xx: show the raw error body in an error-styled bubble.
@@ -119,6 +147,7 @@ async function sendPrompt(prompt) {
     // Network error / timeout — error bubble, never silent.
     addBubble('Request failed: ' + err, 'error');
   } finally {
+    removeTyping(typing); // idempotent safety net if we bailed before removal
     setBusy(false);
     inputEl.focus();
   }
