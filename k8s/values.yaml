@@ -1,5 +1,19 @@
-# Harness values file. Harness resolves <+artifact.image> to the Service's
-# primary artifact (squiggie/ai-agent:<+pipeline.sequenceId>) and injects it
-# into the Deployment via Go templating ({{.Values.image}}). Wire this file
-# into the Service manifest's "Values.yaml" slot in Harness.
-image: <+artifact.image>
+# Harness values file — the ONLY place bare <+...> expressions belong.
+#
+# In this install Harness does NOT render bare <+...> expressions found in raw
+# K8s manifests (they get applied literally — the ConfigMap once shipped the
+# string "<+pipeline.variables.FAILURE_MODE>" to the pod, which broke the app
+# and tripped a canary rollback). The reliable pattern is: keep every <+...>
+# expression HERE, and reference it from the manifests via Go templating
+# ({{.Values.*}}). Harness resolves the expressions in this file, then renders
+# the manifests. Wire this file into the Service manifest's "Values.yaml" slot.
+#
+# - image:       Service Primary Artifact (DockerHub squiggie/ai-agent:<+pipeline.sequenceId>)
+# - failureMode: THE demo toggle, picked at Run time (none/healthz_500/latency/crash_on_start/bad_agent)
+# - gcpProject / gcpLocation: portable GCP wiring, set once in Pipeline → Variables
+# - llmProvider: "vertex" in-cluster (Workload Identity) or "stub" for no-GCP runs
+image:       <+artifact.image>
+failureMode: <+pipeline.variables.FAILURE_MODE>
+gcpProject:  <+pipeline.variables.GOOGLE_CLOUD_PROJECT>
+gcpLocation: <+pipeline.variables.GOOGLE_CLOUD_LOCATION>
+llmProvider: <+pipeline.variables.LLM_PROVIDER>

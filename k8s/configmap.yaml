@@ -1,9 +1,12 @@
-# App configuration. FAILURE_MODE is THE demo toggle. In the Harness pipeline it
-# is supplied by the pipeline variable <+pipeline.variables.FAILURE_MODE>, chosen
-# at Run time from a dropdown; Harness resolves the expression in this manifest
-# before apply, so the SAME image deploys healthy or broken and the canary goes
-# unhealthy → Harness auto-rolls-back. For a manual `kubectl apply` outside
-# Harness, substitute a literal value below.
+# App configuration. FAILURE_MODE is THE demo toggle. Its value — and the LLM
+# wiring below — come from k8s/values.yaml: Harness resolves the <+...>
+# expressions THERE (bare <+...> in a raw manifest is applied literally in this
+# install and breaks the app), then Go templating injects the resolved values
+# here via {{.Values.*}}. Flipping FAILURE_MODE (values.yaml key `failureMode`,
+# picked at Run time) deploys the SAME image healthy or broken so the canary
+# goes unhealthy → Harness auto-rolls-back.
+# NOTE: the {{.Values.*}} placeholders below are NOT valid for a plain
+# `kubectl apply` outside Harness — substitute literal values first.
 #   none | healthz_500 | crash_on_start | latency | bad_agent
 apiVersion: v1
 kind: ConfigMap
@@ -13,28 +16,25 @@ metadata:
   labels:
     app: ai-agent
 data:
-  # Demo toggle — supplied by the Harness pipeline variable, picked at Run time
-  # from a dropdown (none / healthz_500 / latency / crash_on_start / bad_agent).
-  # For a manual `kubectl` deploy, replace the expression with a literal value
-  # ("none" = healthy).
-  FAILURE_MODE: "<+pipeline.variables.FAILURE_MODE>"
+  # Demo toggle — from values.yaml key `failureMode` (Harness resolves
+  # <+pipeline.variables.FAILURE_MODE> there; Go templating injects it here).
+  # For a manual `kubectl` deploy, replace with a literal ("none" = healthy).
+  FAILURE_MODE: "{{.Values.failureMode}}"
 
   # Shown by GET /version and the UI status bar so the on-screen flavor label
   # flips visibly between deploys (e.g. "stable" vs "canary-broken").
   BUILD_FLAVOR: "stable"
 
-  # LLM wiring — pipeline-variable driven. Harness resolves the expression before
-  # apply. "vertex" is the point of Workload Identity in-cluster; "stub" runs
-  # without any Vertex AI access (no GCP calls at all) for no-GCP local runs.
-  # Fixed-value default set once in Pipeline → Variables (vertex for this install).
-  # For a manual `kubectl` deploy, substitute a literal ("vertex" or "stub").
-  LLM_PROVIDER: "<+pipeline.variables.LLM_PROVIDER>"
+  # LLM wiring — from values.yaml key `llmProvider`. "vertex" is the point of
+  # Workload Identity in-cluster; "stub" runs without any Vertex AI access (no
+  # GCP calls at all) for no-GCP local runs. Set once in Pipeline → Variables
+  # (vertex for this install). Manual `kubectl` deploy: substitute a literal.
+  LLM_PROVIDER: "{{.Values.llmProvider}}"
 
-  # GCP project/location — pipeline-variable driven so the demo is portable: a
-  # forker sets these once in Pipeline → Variables as fixed-value defaults
-  # (harness-lab-502401 / us-central1 for this install), no code change. Harness
-  # resolves the expressions before apply. For a manual `kubectl` deploy outside
-  # Harness, substitute a literal project id / region below.
-  GOOGLE_CLOUD_PROJECT: "<+pipeline.variables.GOOGLE_CLOUD_PROJECT>"
-  GOOGLE_CLOUD_LOCATION: "<+pipeline.variables.GOOGLE_CLOUD_LOCATION>"
+  # GCP project/location — from values.yaml keys `gcpProject`/`gcpLocation` so
+  # the demo is portable: a forker sets these once in Pipeline → Variables as
+  # fixed-value defaults (harness-lab-502401 / us-central1 for this install),
+  # no code change. Manual `kubectl` deploy: substitute a literal project/region.
+  GOOGLE_CLOUD_PROJECT: "{{.Values.gcpProject}}"
+  GOOGLE_CLOUD_LOCATION: "{{.Values.gcpLocation}}"
   GEMINI_MODEL: "gemini-2.0-flash"
