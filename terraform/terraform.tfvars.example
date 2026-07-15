@@ -6,7 +6,7 @@ zone         = "us-central1-a"
 cluster_name = "ai-agent-lab"
 
 # Cost knobs (defaults shown)
-# node_count               = 2      # 1 or 2 spot e2-small nodes
+# node_count               = 2      # 1 or 2 spot e2-medium nodes
 # enable_artifact_registry = false  # DockerHub is the primary registry for the lab
 
 # Workload Identity naming — must match k8s/ manifests (CLAUDE.md conventions)
