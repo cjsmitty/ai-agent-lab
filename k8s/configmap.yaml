@@ -1,6 +1,9 @@
-# App configuration. FAILURE_MODE is THE demo toggle: flip it here (or via a
-# Harness service-variable override on this manifest) and redeploy the SAME
-# image — the canary goes unhealthy and Harness auto-rolls-back.
+# App configuration. FAILURE_MODE is THE demo toggle. In the Harness pipeline it
+# is supplied by the pipeline variable <+pipeline.variables.FAILURE_MODE>, chosen
+# at Run time from a dropdown; Harness resolves the expression in this manifest
+# before apply, so the SAME image deploys healthy or broken and the canary goes
+# unhealthy → Harness auto-rolls-back. For a manual `kubectl apply` outside
+# Harness, substitute a literal value below.
 #   none | healthz_500 | crash_on_start | latency | bad_agent
 apiVersion: v1
 kind: ConfigMap
@@ -10,20 +13,28 @@ metadata:
   labels:
     app: ai-agent
 data:
-  # Demo toggle — set to healthz_500 / latency / crash_on_start / bad_agent
-  # to ship a "broken" canary. "none" = healthy.
-  FAILURE_MODE: "none"
+  # Demo toggle — supplied by the Harness pipeline variable, picked at Run time
+  # from a dropdown (none / healthz_500 / latency / crash_on_start / bad_agent).
+  # For a manual `kubectl` deploy, replace the expression with a literal value
+  # ("none" = healthy).
+  FAILURE_MODE: "<+pipeline.variables.FAILURE_MODE>"
 
   # Shown by GET /version and the UI status bar so the on-screen flavor label
   # flips visibly between deploys (e.g. "stable" vs "canary-broken").
   BUILD_FLAVOR: "stable"
 
-  # LLM wiring. "vertex" is the point of Workload Identity in-cluster;
-  # set to "stub" to run without any Vertex AI access (no GCP calls at all).
-  LLM_PROVIDER: "vertex"
+  # LLM wiring — pipeline-variable driven. Harness resolves the expression before
+  # apply. "vertex" is the point of Workload Identity in-cluster; "stub" runs
+  # without any Vertex AI access (no GCP calls at all) for no-GCP local runs.
+  # Fixed-value default set once in Pipeline → Variables (vertex for this install).
+  # For a manual `kubectl` deploy, substitute a literal ("vertex" or "stub").
+  LLM_PROVIDER: "<+pipeline.variables.LLM_PROVIDER>"
 
-  # PLACEHOLDER: replace PROJECT_ID with your GCP project id
-  # (terraform output, or a Harness variable override).
-  GOOGLE_CLOUD_PROJECT: "PROJECT_ID"
-  GOOGLE_CLOUD_LOCATION: "us-central1"
+  # GCP project/location — pipeline-variable driven so the demo is portable: a
+  # forker sets these once in Pipeline → Variables as fixed-value defaults
+  # (harness-lab-502401 / us-central1 for this install), no code change. Harness
+  # resolves the expressions before apply. For a manual `kubectl` deploy outside
+  # Harness, substitute a literal project id / region below.
+  GOOGLE_CLOUD_PROJECT: "<+pipeline.variables.GOOGLE_CLOUD_PROJECT>"
+  GOOGLE_CLOUD_LOCATION: "<+pipeline.variables.GOOGLE_CLOUD_LOCATION>"
   GEMINI_MODEL: "gemini-2.0-flash"
