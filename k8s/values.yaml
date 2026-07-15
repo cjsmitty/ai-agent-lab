@@ -5,7 +5,7 @@
 # string "<+pipeline.variables.FAILURE_MODE>" to the pod, which broke the app
 # and tripped a canary rollback). The reliable pattern is: keep every <+...>
 # expression HERE, and reference it from the manifests via Go templating
-# ({{.Values.*}}). Harness resolves the expressions in this file, then renders
+# (the Values placeholders). Harness resolves the expressions in this file, then renders
 # the manifests. Wire this file into the Service manifest's "Values.yaml" slot.
 #
 # - image:       Service Primary Artifact (DockerHub squiggie/ai-agent:<+pipeline.sequenceId>)

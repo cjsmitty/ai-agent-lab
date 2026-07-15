@@ -2,10 +2,10 @@
 # wiring below — come from k8s/values.yaml: Harness resolves the <+...>
 # expressions THERE (bare <+...> in a raw manifest is applied literally in this
 # install and breaks the app), then Go templating injects the resolved values
-# here via {{.Values.*}}. Flipping FAILURE_MODE (values.yaml key `failureMode`,
+# here via the Values placeholders. Flipping FAILURE_MODE (values.yaml key `failureMode`,
 # picked at Run time) deploys the SAME image healthy or broken so the canary
 # goes unhealthy → Harness auto-rolls-back.
-# NOTE: the {{.Values.*}} placeholders below are NOT valid for a plain
+# NOTE: the Values placeholders below are NOT valid for a plain
 # `kubectl apply` outside Harness — substitute literal values first.
 #   none | healthz_500 | crash_on_start | latency | bad_agent
 apiVersion: v1
