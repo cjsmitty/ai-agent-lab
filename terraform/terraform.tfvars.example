@@ -10,6 +10,7 @@ cluster_name = "ai-agent-lab"
 # enable_artifact_registry = false  # DockerHub is the primary registry for the lab
 
 # Workload Identity naming — must match k8s/ manifests (CLAUDE.md conventions)
-# k8s_namespace = "ai-agent"
-# ksa_name      = "ai-agent-sa"
-# gcp_sa_name   = "ai-agent-app"
+# k8s_namespace  = "ai-agent"                                   # legacy single-namespace binding (backward compat)
+# ksa_name       = "ai-agent-sa"                                # same KSA name in every namespace
+# gcp_sa_name    = "ai-agent-app"                               # ONE shared GCP SA for all envs (roles/aiplatform.user)
+# app_namespaces = ["ai-agent-dev", "ai-agent-uat", "ai-agent-prd"]  # multi-env Harness demo; each gets a WI binding to the shared SA

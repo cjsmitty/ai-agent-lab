@@ -41,9 +41,15 @@ variable "node_machine_type" {
 # --- Shared naming conventions (must stay in sync with k8s/, see CLAUDE.md) ---
 
 variable "k8s_namespace" {
-  description = "Kubernetes namespace of the app — must match k8s/ manifests (Workload Identity binding)."
+  description = "Legacy single-namespace of the app (backward compat with the originally-running deploy). Kept bound for Workload Identity; the multi-env demo uses app_namespaces below."
   type        = string
   default     = "ai-agent"
+}
+
+variable "app_namespaces" {
+  description = "Multi-env namespaces the app deploys into (Harness dev/uat/prd on the same cluster). Each gets a Workload Identity binding for the SHARED gcp_sa_name SA, using the same ksa_name. Must match k8s/ manifests (CLAUDE.md conventions)."
+  type        = list(string)
+  default     = ["ai-agent-dev", "ai-agent-uat", "ai-agent-prd"]
 }
 
 variable "ksa_name" {

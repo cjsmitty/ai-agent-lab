@@ -9,11 +9,22 @@
 # the manifests. Wire this file into the Service manifest's "Values.yaml" slot.
 #
 # - image:       Service Primary Artifact (DockerHub squiggie/ai-agent:<+pipeline.sequenceId>)
-# - failureMode: THE demo toggle, picked at Run time (none/healthz_500/latency/crash_on_start/bad_agent)
+# - failureMode: THE demo toggle, now a per-STAGE variable <+stage.variables.FAILURE_MODE>
+#                (defined on each CD stage — DEV/UAT/PRD — as a runtime input, so each
+#                environment gets its own value; no longer a pipeline variable). Picked at
+#                Run time (none/healthz_500/latency/crash_on_start/bad_agent).
 # - gcpProject / gcpLocation: portable GCP wiring, set once in Pipeline → Variables
 # - llmProvider: "vertex" in-cluster (Workload Identity) or "stub" for no-GCP runs
+# - namespace:   the deploying Infrastructure Definition's namespace, so the SAME
+#                manifests deploy to a per-Environment namespace (ai-agent-dev /
+#                ai-agent-uat / ai-agent-prd) on the one shared GKE cluster.
+#                Harness resolves <+infra.namespace> to that Infra Definition's
+#                namespace per stage; every manifest references it via
+#                {{.Values.namespace}} (metadata.namespace, and the Namespace
+#                object's metadata.name).
 image:       <+artifact.image>
-failureMode: <+pipeline.variables.FAILURE_MODE>
+failureMode: <+stage.variables.FAILURE_MODE>
 gcpProject:  <+pipeline.variables.GOOGLE_CLOUD_PROJECT>
 gcpLocation: <+pipeline.variables.GOOGLE_CLOUD_LOCATION>
 llmProvider: <+pipeline.variables.LLM_PROVIDER>
+namespace:   <+infra.namespace>

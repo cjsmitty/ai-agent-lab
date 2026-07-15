@@ -12,7 +12,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: ai-agent-config
-  namespace: ai-agent
+  namespace: {{.Values.namespace}}
   labels:
     app: ai-agent
 data:

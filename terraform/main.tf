@@ -86,9 +86,17 @@ resource "google_container_node_pool" "spot" {
 
 # ---------------------------------------------------------------------------
 # Vertex AI auth via Workload Identity — no API keys anywhere.
-# KSA <namespace>/<ksa_name> (see k8s/ and CLAUDE.md conventions) impersonates
-# this GCP SA; the KSA carries the annotation
+# ONE SHARED GCP SA (ai-agent-app, roles/aiplatform.user) is impersonated by the
+# KSA <namespace>/<ksa_name> (see k8s/ and CLAUDE.md conventions) in EACH app
+# namespace; every KSA carries the annotation
 #   iam.gke.io/gcp-service-account: <gcp_sa_email output>
+#
+# Multi-env: the app deploys to dev/uat/prd namespaces on the same cluster, each
+# with its own KSA (same name, ai-agent-sa) but all sharing this single GCP SA.
+# A workloadIdentityUser binding is required per (namespace/KSA) principal —
+# without it, pods in that namespace get NO Vertex auth. The bindings live on
+# the GCP SA side, so the namespaces need not exist yet (no ordering dependency
+# on Harness deploying first).
 # ---------------------------------------------------------------------------
 resource "google_service_account" "app" {
   account_id   = var.gcp_sa_name
@@ -103,6 +111,9 @@ resource "google_project_iam_member" "app_aiplatform_user" {
   member  = "serviceAccount:${google_service_account.app.email}"
 }
 
+# Legacy single-namespace binding (ai-agent/ai-agent-sa). Kept for backward
+# compat with the originally-running deploy so it does not lose Vertex auth; the
+# multi-env dev/uat/prd bindings are added additively below.
 resource "google_service_account_iam_member" "app_workload_identity" {
   service_account_id = google_service_account.app.name
   role               = "roles/iam.workloadIdentityUser"
@@ -119,6 +130,23 @@ resource "google_service_account_iam_member" "app_workload_identity" {
   # Note: on brand-new projects a short IAM propagation window can still
   # surface the same 400 even after the cluster exists — simply re-run
   # `terraform apply`; it resolves cleanly and is idempotent.
+  depends_on = [google_container_cluster.lab]
+}
+
+# Multi-env bindings: one workloadIdentityUser member per app namespace
+# (dev/uat/prd), all pointing at the SAME shared GCP SA and the same KSA name.
+# Members created:
+#   serviceAccount:PROJECT.svc.id.goog[ai-agent-dev/ai-agent-sa]
+#   serviceAccount:PROJECT.svc.id.goog[ai-agent-uat/ai-agent-sa]
+#   serviceAccount:PROJECT.svc.id.goog[ai-agent-prd/ai-agent-sa]
+resource "google_service_account_iam_member" "app_workload_identity_envs" {
+  for_each = toset(var.app_namespaces)
+
+  service_account_id = google_service_account.app.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[${each.value}/${var.ksa_name}]"
+
+  # Same lazy Identity Pool dependency as the legacy binding above; see its note.
   depends_on = [google_container_cluster.lab]
 }
 
