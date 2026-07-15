@@ -1,0 +1,5 @@
+# Harness values file. Harness resolves <+artifact.image> to the Service's
+# primary artifact (squiggie/ai-agent:<+pipeline.sequenceId>) and injects it
+# into the Deployment via Go templating ({{.Values.image}}). Wire this file
+# into the Service manifest's "Values.yaml" slot in Harness.
+image: <+artifact.image>

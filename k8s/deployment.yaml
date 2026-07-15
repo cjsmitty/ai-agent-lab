@@ -40,11 +40,18 @@ spec:
       serviceAccountName: ai-agent-sa
       containers:
         - name: ai-agent
-          # Harness resolves <+artifact.image> to the Service's Primary Artifact
-          # (DockerHub squiggie/ai-agent : <+pipeline.sequenceId>) at deploy
-          # time, so the canary runs the image CI just built. For a manual
-          # kubectl deploy, override this with `kubectl set image` or kustomize.
-          image: <+artifact.image>
+          # Image comes from values.yaml via Go templating: Harness renders
+          # {{.Values.image}} using k8s/values.yaml, whose `image` key holds
+          # the <+artifact.image> expression → the Service's Primary Artifact
+          # (DockerHub squiggie/ai-agent : <+pipeline.sequenceId>). Bare
+          # <+artifact.image> in the raw manifest was not being rendered by
+          # Harness (applied literally → InvalidImageName); the values.yaml +
+          # {{.Values.image}} pattern is the reliable injection path.
+          # For a manual kubectl deploy outside Harness, this Go-template
+          # placeholder is NOT valid YAML for `kubectl apply` — substitute a
+          # literal image (`kubectl set image` or kustomize), same manual-deploy
+          # caveat as the other <+...> values in this repo.
+          image: {{.Values.image}}
           ports:
             - name: http
               containerPort: 8080
