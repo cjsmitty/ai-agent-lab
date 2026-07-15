@@ -40,10 +40,11 @@ spec:
       serviceAccountName: ai-agent-sa
       containers:
         - name: ai-agent
-          # PLACEHOLDER: Harness CI pushes to DockerHub and overrides the tag
-          # at deploy time (e.g. <+artifact.image>). Replace DOCKERHUB_USER for
-          # manual kubectl deploys.
-          image: DOCKERHUB_USER/ai-agent-lab:latest
+          # Harness resolves <+artifact.image> to the Service's Primary Artifact
+          # (DockerHub squiggie/ai-agent : <+pipeline.sequenceId>) at deploy
+          # time, so the canary runs the image CI just built. For a manual
+          # kubectl deploy, override this with `kubectl set image` or kustomize.
+          image: <+artifact.image>
           ports:
             - name: http
               containerPort: 8080
