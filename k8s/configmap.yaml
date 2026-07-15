@@ -37,4 +37,4 @@ data:
   # no code change. Manual `kubectl` deploy: substitute a literal project/region.
   GOOGLE_CLOUD_PROJECT: "{{.Values.gcpProject}}"
   GOOGLE_CLOUD_LOCATION: "{{.Values.gcpLocation}}"
-  GEMINI_MODEL: "gemini-2.0-flash"
+  GEMINI_MODEL: "gemini-2.5-flash"
