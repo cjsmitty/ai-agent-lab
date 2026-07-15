@@ -22,7 +22,7 @@ variable "cluster_name" {
 }
 
 variable "node_count" {
-  description = "Number of spot e2-medium nodes (1-2 is plenty for the demo; keep it small, it's a cost guard)."
+  description = "Number of spot e2-standard-2 nodes (1-2 is plenty for the demo; keep it small, it's a cost guard)."
   type        = number
   default     = 2
 
@@ -33,9 +33,9 @@ variable "node_count" {
 }
 
 variable "node_machine_type" {
-  description = "Machine type for the node pool. e2-medium (4GB) is required so the Harness delegate (1000m CPU / 2Gi memory request) fits alongside app pods — e2-small's ~940m/1.33Gi allocatable is too small for the delegate."
+  description = "Machine type for the node pool. e2-standard-2 (2 vCPU / 8GB) is required so the Harness delegate (1000m CPU / 2Gi memory request) fits alongside app pods. Shared-core types are too small: e2-small (~940m/1.33Gi) and e2-medium (1 vCPU, ~940m allocatable CPU) both fall short of the delegate's 1000m CPU request. e2-standard-2 gives ~1930m allocatable CPU and ~6.5Gi allocatable memory."
   type        = string
-  default     = "e2-medium"
+  default     = "e2-standard-2"
 }
 
 # --- Shared naming conventions (must stay in sync with k8s/, see CLAUDE.md) ---

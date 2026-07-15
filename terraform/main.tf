@@ -9,11 +9,13 @@
 # Before destroy: delete any LoadBalancer Services created via kubectl/Harness
 # first, or their forwarding rules/firewalls may orphan and keep billing.
 #
-# Cost guards baked in below: zonal (not regional/Autopilot), 1-2 e2-medium
+# Cost guards baked in below: zonal (not regional/Autopilot), 1-2 e2-standard-2
 # SPOT nodes, small standard disks, deletion_protection = false so destroy
 # never leaves a billing cluster behind.
-# (e2-medium, not e2-small: the Harness delegate requests 1000m CPU / 2Gi and
-# will not schedule on e2-small's ~940m/1.33Gi allocatable per node.)
+# (e2-standard-2, not e2-small/e2-medium: the Harness delegate requests 1000m
+# CPU / 2Gi and will not schedule on shared-core nodes — e2-small and e2-medium
+# both expose only ~940m allocatable CPU, below the delegate's 1000m request.
+# e2-standard-2 (2 vCPU / 8GB) gives ~1930m/~6.5Gi allocatable per node.)
 
 # ---------------------------------------------------------------------------
 # Project APIs — enabled by apply, NEVER disabled by destroy
@@ -66,7 +68,7 @@ resource "google_container_node_pool" "spot" {
   node_count = var.node_count # 1-2 enforced by variable validation
 
   node_config {
-    machine_type = var.node_machine_type # e2-medium
+    machine_type = var.node_machine_type # e2-standard-2
     spot         = true                  # cheapest; pods can be evicted — demo only
     disk_size_gb = 30
     disk_type    = "pd-standard"
