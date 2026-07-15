@@ -22,13 +22,13 @@ variable "cluster_name" {
 }
 
 variable "node_count" {
-  description = "Number of spot e2-standard-2 nodes (1-2 is plenty for the demo; keep it small, it's a cost guard)."
+  description = "Number of spot e2-standard-2 nodes. 2 runs the app + Harness delegate (1000m CPU); 3 adds a node so the Harness CI build pod (~930m CPU) can also schedule. Keep it small — it's a cost guard."
   type        = number
-  default     = 2
+  default     = 3
 
   validation {
-    condition     = var.node_count >= 1 && var.node_count <= 2
-    error_message = "node_count must be 1 or 2 — this is a cheap throwaway demo cluster."
+    condition     = var.node_count >= 1 && var.node_count <= 3
+    error_message = "node_count must be 1, 2, or 3 — this is a cheap throwaway demo cluster."
   }
 }
 

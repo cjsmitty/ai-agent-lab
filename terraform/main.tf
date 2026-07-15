@@ -9,7 +9,7 @@
 # Before destroy: delete any LoadBalancer Services created via kubectl/Harness
 # first, or their forwarding rules/firewalls may orphan and keep billing.
 #
-# Cost guards baked in below: zonal (not regional/Autopilot), 1-2 e2-standard-2
+# Cost guards baked in below: zonal (not regional/Autopilot), 1-3 e2-standard-2
 # SPOT nodes, small standard disks, deletion_protection = false so destroy
 # never leaves a billing cluster behind.
 # (e2-standard-2, not e2-small/e2-medium: the Harness delegate requests 1000m
@@ -65,7 +65,7 @@ resource "google_container_node_pool" "spot" {
   cluster  = google_container_cluster.lab.name
   location = var.zone
 
-  node_count = var.node_count # 1-2 enforced by variable validation
+  node_count = var.node_count # 1-3 enforced by variable validation (3 fits the CI build pod)
 
   node_config {
     machine_type = var.node_machine_type # e2-standard-2
