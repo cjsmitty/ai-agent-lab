@@ -1,0 +1,31 @@
+pipeline:
+  id: pipeline_ai_agent_lab_build_1814
+  name: pipeline_ai_agent_lab_build_1814
+  stages:
+    - id: build_and_test
+      name: Build and Test
+      runtime: cloud
+      clone:
+        enabled: true
+      cache:
+        enabled: true
+      steps:
+        - id: test
+          name: Install and Test
+          run:
+            container:
+              image: python:3.13-slim
+            shell: bash
+            script: |-
+              python --version
+              pip install --upgrade pip
+              pip install -r requirements.txt -r requirements-dev.txt
+              mkdir -p .harness/reports
+              pytest app/tests --junitxml=.harness/reports/junit.xml -v
+            report:
+              type: junit
+              paths:
+                - .harness/reports/junit.xml
+          timeout: 10m
+  tags:
+    onboarding: "true"
